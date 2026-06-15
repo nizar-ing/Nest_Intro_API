@@ -67,9 +67,11 @@ export class UsersController {
   }
 
   // PATCH /users/:id
+  // ParseIntPipe coerces the route segment to a number before it reaches the service,
+  // consistent with how query params are handled in getUsers().
   @Patch(':id')
   @ApiParam({ name: 'id', required: true, example: '1234' })
-  patchUser(@Param('id') id: string, @Body() patchUserDto: PatchUserDto) {
+  patchUser(@Param('id', ParseIntPipe) id: number, @Body() patchUserDto: PatchUserDto) {
     return this.usersService.update(id, patchUserDto);
   }
 }

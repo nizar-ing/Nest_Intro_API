@@ -1,6 +1,7 @@
 import {
   ConflictException,
   forwardRef,
+  HttpException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -10,6 +11,7 @@ import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from '../dtos/create-user.dto';
+import { PatchUserDto } from '../dtos/patch-user.dto';
 import { ConfigService } from '@nestjs/config';
 
 /**
@@ -36,13 +38,14 @@ export class UsersService {
     private readonly configService: ConfigService,
   ) {}
 
-  // TODO: replace stub data with a real paginated DB query using skip/take.
-  public findAll(limit: number, page: number) {
+  public async findAll(limit: number, page: number): Promise<User[]> {
     try {
-      return [
-        { firstName: 'John', email: 'john@doe.com' },
-        { firstName: 'Alice', email: 'alice@doe.com' },
-      ];
+      // skip = offset into the full result set; take = max rows per page.
+      // page 1 → skip 0, page 2 → skip limit, page 3 → skip 2*limit, etc.
+      return await this.usersRepository.find({
+        skip: (page - 1) * limit,
+        take: limit,
+      });
     } catch {
       throw new InternalServerErrorException('Failed to retrieve users');
     }
@@ -84,10 +87,38 @@ export class UsersService {
     return newUser;
   }
 
-  // TODO: replace stub with a real PATCH that persists to the DB.
-  // When implemented: call findOneById(id) first — it already throws NotFoundException
-  // if the user does not exist, so no extra guard will be needed here.
-  public update(id: string, patchUserDto: any) {
-    return { id, ...patchUserDto };
+  public async update(id: number, patchUserDto: PatchUserDto): Promise<User> {
+    try {
+      // findOneById already throws NotFoundException when the user is absent —
+      // no separate existence check is needed here.
+      const user = await this.findOneById(id);
+
+      // Email conflict guard: only check when the client is actually changing the email.
+      // Skipping when the new email matches the current one avoids a false 409 — the
+      // findOne query would find the user themselves and incorrectly block the request.
+      if (patchUserDto.email && patchUserDto.email !== user.email) {
+        const emailTaken = await this.usersRepository.findOne({
+          where: { email: patchUserDto.email },
+        });
+        if (emailTaken) {
+          throw new ConflictException(
+            `A user with the email ${patchUserDto.email} is already registered`,
+          );
+        }
+      }
+
+      // ?? keeps the stored value when a DTO field is undefined (not sent by the client).
+      // Object.assign() would NOT work here — it copies undefined, overwriting DB values.
+      user.firstName = patchUserDto.firstName ?? user.firstName;
+      user.lastName  = patchUserDto.lastName  ?? user.lastName;
+      user.email     = patchUserDto.email     ?? user.email;
+      user.password  = patchUserDto.password  ?? user.password;
+
+      // save() issues an UPDATE because the entity already carries its primary key.
+      return await this.usersRepository.save(user);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException('Failed to update user');
+    }
   }
 }
