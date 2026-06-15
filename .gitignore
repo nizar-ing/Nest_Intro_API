@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files (contain secrets)
+.env
+.env.*
+
+# IDE
+.idea/
+
+# Compodoc generated docs
+documentation/
+
+# Logs
+*.log
+npm-debug.log*

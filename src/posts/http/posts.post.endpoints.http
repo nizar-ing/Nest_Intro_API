@@ -1,0 +1,18 @@
+POST http://localhost:3000/posts
+Content-Type: application/json
+
+{
+  "title": "What's new with NestJS",
+  "postType": "post",
+  "slug": "new-with-nestjs-10",
+  "status": "draft",
+  "content": "Test Content",
+  "schema": "{\r\n \"@context\": \"https:\/\/schema.org\",\r\n \"@type\": \"Person\"\r\n }",
+  "featuredImageUrl": "http://localhost.com/images/image1.jpg",
+  "publishOn": "2026-02-25T10:46:32+0000",
+  "metaOptions": {
+    "metaValue": "{\"sidebarEnabled\": true, \"footerActive\": true}"
+  },
+  "authorId": 1,
+  "tags": [1, 4]
+}
