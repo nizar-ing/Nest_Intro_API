@@ -2,6 +2,7 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
+  RequestTimeoutException,
 } from '@nestjs/common';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 import { User } from '../user.entity';
@@ -24,10 +25,15 @@ export class UsersCreateManyProvider {
     const queryRunner = this.datasource.createQueryRunner();
 
     // 2. Connect this Query runner instance to our datasource.
-    await queryRunner.connect();
-
     // 3. Start transaction.
-    await queryRunner.startTransaction();
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+    } catch {
+      throw new RequestTimeoutException(
+        'Could not connect to the database or start a transaction',
+      );
+    }
     try {
       for (let user of createManyUsersDto.users) {
         let newUser = queryRunner.manager.create(User, user);
