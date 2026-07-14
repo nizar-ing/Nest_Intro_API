@@ -49,8 +49,14 @@ export class UsersCreateManyProvider {
         description: String(error),
       });
     } finally {
-      // 6. Release our connection
-      await queryRunner.release();
+      try {
+        // 6. Release our connection
+        await queryRunner.release();
+      } catch (error) {
+        throw new RequestTimeoutException('Could not release the connection', {
+          description: String(error),
+        });
+      }
     }
     return newUsers;
   }
