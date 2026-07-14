@@ -8,6 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from '../dtos/create-user.dto';
+import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
 import { ConfigService } from '@nestjs/config';
 import { UsersCreateManyProvider } from './users-create-many.provider';
@@ -95,7 +96,7 @@ export class UsersService {
     return newUser;
   }
 
-  public async createMany(createUserDtos: CreateUserDto[]) {
+  public async createMany(createManyUsersDto: CreateManyUsersDto) {
     // let newUsers: User[] = [];
     //
     // // 1. Create Query runner instance.
@@ -123,6 +124,6 @@ export class UsersService {
     //   await queryRunner.release();
     // }
 
-    return await this.usersCreateManyProvider.createMany(createUserDtos);
+    return await this.usersCreateManyProvider.createMany(createManyUsersDto.users);
   }
 }
