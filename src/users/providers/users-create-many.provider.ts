@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateManyUsersDto } from '../dtos/create-many-users.dto';
 import { User } from '../user.entity';
-import { DataSource } from 'typeorm';
+import { DataSource, QueryFailedError } from 'typeorm';
 
 @Injectable()
 export class UsersCreateManyProvider {
@@ -36,6 +40,19 @@ export class UsersCreateManyProvider {
     } catch (e) {
       // 5. If unsuccessful --> rollback.
       await queryRunner.rollbackTransaction();
+
+      if (e instanceof HttpException) {
+        throw e;
+      }
+
+      // Re-throw so the global filter can map pg SQLSTATE codes to HTTP responses.
+      if (e instanceof QueryFailedError) {
+        throw e;
+      }
+
+      throw new InternalServerErrorException(
+        'Could not complete the bulk user creation',
+      );
     } finally {
       // 6. Release our connection
       await queryRunner.release();

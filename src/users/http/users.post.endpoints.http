@@ -14,12 +14,18 @@ POST http://localhost:3000/users/create-many
 Content-Type: application/json
 
 {
-   "users": [
-        {
-        "firstName": "Mohamed",
-        "lastName": "Bergal",
-        "email": "med@gmail.com",
-        "password": "bergal@1234"
-        }
-   ]
+  "users": [
+    {
+      "firstName": "Nizar",
+      "lastName": "Bergal",
+      "email": "nizar@gmail.com",
+      "password": "bergal@1234"
+    },
+    {
+      "firstName": "Ines",
+      "lastName": "Bergal",
+      "email": "ines@gmail.com",
+      "password": "bergal@1234"
+    }
+  ]
 }
