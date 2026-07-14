@@ -96,7 +96,7 @@ export class UsersService {
     return newUser;
   }
 
-  public async createMany(createManyUsersDto: CreateManyUsersDto) {
+  public async createMany(createManyUsersDto: CreateManyUsersDto ) {
     // let newUsers: User[] = [];
     //
     // // 1. Create Query runner instance.
@@ -124,6 +124,6 @@ export class UsersService {
     //   await queryRunner.release();
     // }
 
-    return await this.usersCreateManyProvider.createMany(createManyUsersDto.users);
+    return await this.usersCreateManyProvider.createMany(createManyUsersDto);
   }
 }
