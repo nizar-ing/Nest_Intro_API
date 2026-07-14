@@ -66,7 +66,7 @@ src/<domain>/
 ```
 
 **Domains:**
-- `users` — User entity; exports `UsersService` for cross-module use. `findAll()` and `update()` are stubs (return hardcoded data); `createUser()` fetches for duplicate email but does not yet throw `ConflictException`.
+- `users` — User entity; exports `UsersService` for cross-module use. All read/write operations hit the DB: `findAll()` paginates via skip/take, `findOneById()` throws `NotFoundException`, `createUser()` guards against duplicate emails with `ConflictException`. Bulk creation (`POST /users/create-many`) is handled by `UsersCreateManyProvider` using an explicit `QueryRunner` transaction. The PATCH endpoint is currently commented out.
 - `posts` — Post entity; depends on UsersModule and TagsModule; owns the MetaOption repository even though MetaOption has its own module (needed for manual orphan deletion).
 - `tags` — Tag entity with soft-delete via `@DeleteDateColumn`. Use `tagsRepository.softDelete(id)` / `.restore(id)`; TypeORM automatically filters out soft-deleted rows in normal queries.
 - `meta-options` — MetaOption entity with a OneToOne → Post relationship; cascade-deleted manually in `PostsService.delete()` because TypeORM's OneToOne cascade does not propagate DELETE from Post → MetaOption.
@@ -78,5 +78,9 @@ src/<domain>/
 - `Post` ↔(ManyToMany, JoinTable on posts side)↔ `Tag`
 
 **Global validation:** `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true` — DTOs use class-validator decorators and are the sole source of input validation.
+
+**Global exception filter:** `src/common/filters/http-exception.filter.ts` catches every unhandled exception and normalises the response to `{ statusCode, timestamp, path, message }`. PostgreSQL SQLSTATE codes are mapped to HTTP statuses (23505 unique → 409, 23503 FK → 400, 23502 not-null → 400) without leaking column or table names. `ValidationPipe` `string[]` messages are joined with `; ` before being returned.
+
+**Transaction pattern:** Complex write operations are extracted into dedicated providers (e.g. `UsersCreateManyProvider`) that inject `DataSource` and manage a `QueryRunner` explicitly (connect → startTransaction → commit/rollback → release). Do not inline transaction logic in `UsersService`.
 
 **Swagger:** Every DTO property should carry `@ApiProperty` / `@ApiPropertyOptional` decorators to appear in the generated spec.

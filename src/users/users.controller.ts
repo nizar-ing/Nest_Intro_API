@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CreateUserDto } from './dtos/create-user.dto';
+import { CreateManyUsersDto } from './dtos/create-many-users.dto';
 import { PatchUserDto } from './dtos/patch-user.dto';
 import { UsersService } from './providers/users.service';
 
@@ -66,12 +67,17 @@ export class UsersController {
     return this.usersService.createUser(createUserDto);
   }
 
+  @Post('create-many')
+  createUsers(@Body() createManyUsersDto: CreateManyUsersDto) {
+    return this.usersService.createMany(createManyUsersDto.users);
+  }
+
   // PATCH /users/:id
   // ParseIntPipe coerces the route segment to a number before it reaches the service,
   // consistent with how query params are handled in getUsers().
-  @Patch(':id')
-  @ApiParam({ name: 'id', required: true, example: '1234' })
-  patchUser(@Param('id', ParseIntPipe) id: number, @Body() patchUserDto: PatchUserDto) {
-    return this.usersService.update(id, patchUserDto);
-  }
+  // @Patch(':id')
+  // @ApiParam({ name: 'id', required: true, example: '1234' })
+  // patchUser(@Param('id', ParseIntPipe) id: number, @Body() patchUserDto: PatchUserDto) {
+  //   return this.usersService.update(id, patchUserDto);
+  // }
 }

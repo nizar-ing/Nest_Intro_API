@@ -4,6 +4,7 @@ import { UsersService } from './providers/users.service';
 import { AuthModule } from '../auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user.entity';
+import { UsersCreateManyProvider } from './providers/users-create-many.provider';
 
 /**
  * UsersModule owns everything related to the `users` table.
@@ -19,7 +20,7 @@ import { User } from './user.entity';
  */
 @Module({
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, UsersCreateManyProvider],
   exports: [UsersService],
   imports: [
     forwardRef(() => AuthModule),              // breaks circular dep with AuthModule

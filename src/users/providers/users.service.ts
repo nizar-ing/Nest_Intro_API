@@ -1,18 +1,16 @@
 import {
   ConflictException,
-  forwardRef,
-  HttpException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { PatchUserDto } from '../dtos/patch-user.dto';
 import { ConfigService } from '@nestjs/config';
+import { UsersCreateManyProvider } from './users-create-many.provider';
 
 /**
  * Core business logic for the users domain.
@@ -34,9 +32,19 @@ export class UsersService {
     // The User entity must be registered in the same module via TypeOrmModule.forFeature([User]).
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-
     private readonly configService: ConfigService,
-  ) {}
+
+    // /**
+    //  * Inject Datasource
+    //  */
+    // private readonly datasource: DataSource,
+
+    /**
+     * Inject usersCreateMany Provider
+     */
+    private readonly usersCreateManyProvider: UsersCreateManyProvider
+  ) {
+  }
 
   public async findAll(limit: number, page: number): Promise<User[]> {
     try {
@@ -87,38 +95,34 @@ export class UsersService {
     return newUser;
   }
 
-  public async update(id: number, patchUserDto: PatchUserDto): Promise<User> {
-    try {
-      // findOneById already throws NotFoundException when the user is absent —
-      // no separate existence check is needed here.
-      const user = await this.findOneById(id);
+  public async createMany(createUserDtos: CreateUserDto[]) {
+    // let newUsers: User[] = [];
+    //
+    // // 1. Create Query runner instance.
+    // const queryRunner = this.datasource.createQueryRunner();
+    //
+    // // 2. Connect this Query runner instance to our datasource.
+    // await queryRunner.connect();
+    //
+    // // 3. Start transaction.
+    // await queryRunner.startTransaction();
+    // try {
+    //   for (let user of createUserDtos) {
+    //     let newUser = queryRunner.manager.create(User, user);
+    //     let savedUser = await queryRunner.manager.save(newUser);
+    //     newUsers.push(savedUser);
+    //   }
+    //   // 4. If successful --> commit.
+    //   await queryRunner.commitTransaction();
+    //
+    // } catch (e) {
+    //   // 5. If unsuccessful --> rollback.
+    //   await queryRunner.rollbackTransaction();
+    // } finally {
+    //   // 6. Release our connection
+    //   await queryRunner.release();
+    // }
 
-      // Email conflict guard: only check when the client is actually changing the email.
-      // Skipping when the new email matches the current one avoids a false 409 — the
-      // findOne query would find the user themselves and incorrectly block the request.
-      if (patchUserDto.email && patchUserDto.email !== user.email) {
-        const emailTaken = await this.usersRepository.findOne({
-          where: { email: patchUserDto.email },
-        });
-        if (emailTaken) {
-          throw new ConflictException(
-            `A user with the email ${patchUserDto.email} is already registered`,
-          );
-        }
-      }
-
-      // ?? keeps the stored value when a DTO field is undefined (not sent by the client).
-      // Object.assign() would NOT work here — it copies undefined, overwriting DB values.
-      user.firstName = patchUserDto.firstName ?? user.firstName;
-      user.lastName  = patchUserDto.lastName  ?? user.lastName;
-      user.email     = patchUserDto.email     ?? user.email;
-      user.password  = patchUserDto.password  ?? user.password;
-
-      // save() issues an UPDATE because the entity already carries its primary key.
-      return await this.usersRepository.save(user);
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Failed to update user');
-    }
+    return await this.usersCreateManyProvider.createMany(createUserDtos);
   }
 }
