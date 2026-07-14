@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { UsersService } from '../../users/providers/users.service';
 import { CreatePostDto } from '../dtos/create-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,9 @@ import { Repository } from 'typeorm';
 import { Post } from '../post.entity';
 import { TagsService } from '../../tags/providers/tags.service';
 import { PatchPostDTO } from '../dtos/patch-post.dto';
+import { PaginationProvider } from '../../common/pagination/providers/pagination.provider';
+import { PaginationQueryDto } from '../../common/pagination/dtos/pagination-query.dto';
+import { Paginated } from '../../common/pagination/interfaces/paginated.interface';
 
 /**
  * Core business logic for the posts domain.
@@ -27,6 +31,7 @@ export class PostsService {
   constructor(
     private readonly usersService: UsersService,
     private readonly tagsService: TagsService,
+    private readonly paginationProvider: PaginationProvider,
 
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
@@ -36,17 +41,17 @@ export class PostsService {
     private readonly metaOptionsRepository: Repository<MetaOption>,
   ) {}
 
-  // metaOptions and author are explicitly joined here because only metaOptions is eager.
-  // tags are NOT eager — they are omitted from this query intentionally.
-  public async findAll(userId: number) {
-    try {
-      return await this.postsRepository.find({
-        relations: { metaOptions: true, author: true },
-      });
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Failed to retrieve posts');
-    }
+  // metaOptions and author are explicitly joined; tags are omitted intentionally.
+  public async findAll(
+    paginationQuery: PaginationQueryDto,
+    request: Request,
+  ): Promise<Paginated<Post>> {
+    return this.paginationProvider.paginateQuery(
+      paginationQuery,
+      this.postsRepository,
+      request,
+      { relations: { metaOptions: true, author: true } },
+    );
   }
 
   public async create(createPostDto: CreatePostDto) {

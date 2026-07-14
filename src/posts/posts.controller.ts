@@ -1,28 +1,36 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, ParseIntPipe, Patch, Post, Query, Req } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 
 import { PostsService } from './providers/posts.service';
 import { CreatePostDto } from './dtos/create-post.dto';
 import { PatchPostDTO } from './dtos/patch-post.dto';
+import { PaginationQueryDto } from '../common/pagination/dtos/pagination-query.dto';
 
 /**
  * Handles all HTTP traffic under the /posts route prefix.
  *
  * Route summary:
- *   GET    /posts/:userId   → all posts (userId param currently unused in service)
- *   POST   /posts           → create a post (with optional tags and meta-options)
- *   PATCH  /posts           → partial update; post id is in the request body
- *   DELETE /posts?id=<n>    → hard-delete post + orphaned meta-option row
+ *   GET    /posts?limit=10&page=1  → paginated posts (data + meta + links)
+ *   POST   /posts                  → create a post (with optional tags and meta-options)
+ *   PATCH  /posts                  → partial update; post id is in the request body
+ *   DELETE /posts?id=<n>           → hard-delete post + orphaned meta-option row
  */
 @Controller('posts')
 @ApiTags('Posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  // The {/:userId} syntax makes userId an optional route segment.
-  @Get('{/:userId}')
-  public getPosts(@Param('userId') userId: number) {
-    return this.postsService.findAll(userId);
+  @Get()
+  @ApiOperation({ summary: 'Fetch a paginated list of posts' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Items per page' })
+  @ApiQuery({ name: 'page',  required: false, type: Number, example: 1,  description: 'Page number (1-based)' })
+  @ApiResponse({ status: 200, description: 'Paginated posts with meta and navigation links' })
+  public getPosts(
+    @Query() paginationQuery: PaginationQueryDto,
+    @Req() request: Request,
+  ) {
+    return this.postsService.findAll(paginationQuery, request);
   }
 
   @ApiOperation({ summary: 'Creating a new blog post' })

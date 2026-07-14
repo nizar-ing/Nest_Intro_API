@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './post.entity';
 import { MetaOption } from '../meta-options/meta-option.entity';
 import { TagsModule } from '../tags/tags.module';
+import { PaginationModule } from '../common/pagination/pagination.module';
 
 /**
  * PostsModule owns the posts domain and orchestrates its cross-module dependencies.
@@ -25,6 +26,7 @@ import { TagsModule } from '../tags/tags.module';
   imports: [
     UsersModule,
     TagsModule,
+    PaginationModule,
     TypeOrmModule.forFeature([Post, MetaOption]),
   ],
 })
